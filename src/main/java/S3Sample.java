@@ -36,8 +36,8 @@ public class S3Sample {
 
     public static void main(String[] args) throws IOException {
     	
-    	String accessKeyId = "AKIAJHQIAD5M2T3FTJJA";
-    	String secretKey = "SI1oIO1mi+uJxsFPdHRmXCWOU3KPJndQ/r8x/hiE";
+    	String accessKeyId = "your keyId";
+    	String secretKey = "your secretKey";
 
         AWSCredentials credentials = null;
         try {
