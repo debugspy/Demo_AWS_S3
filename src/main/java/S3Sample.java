@@ -9,6 +9,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.UUID;
 
 import com.amazonaws.AmazonClientException;
@@ -97,13 +100,17 @@ public class S3Sample {
             s3.putObject(new PutObjectRequest(bucketNameUS, key, createSampleFile()));
             //give everyone read access after put file on S3
             s3.setObjectAcl(bucketNameUS, key, acl);
+            
+            //Store object's info to MySQL (RDS) on Amazon
+            //https://s3.amazonaws.com/hoa-bucket-01/Requirements.txt
+            insertObjectInfoMySQL(usWest2, bucketNameUS, key);
 
             // Download an object
             System.out.println("Downloading an object");
             S3Object object = s3.getObject(new GetObjectRequest(bucketNameUS, key));
             System.out.println("Content-Type: "  + object.getObjectMetadata().getContentType());
             displayTextInputStream(object.getObjectContent()); //Display content of object
-
+            
             //List objects in your bucket by prefix
             System.out.println("Listing objects");
             ObjectListing objectListing = s3.listObjects(new ListObjectsRequest()
@@ -114,7 +121,7 @@ public class S3Sample {
                                    "(size = " + objectSummary.getSize() + ")");
             }
 
-            //Delete an object
+            //Delete an object on S3
             System.out.println("Deleting an object\n");
             s3.deleteObject(bucketNameUS, key);
 
@@ -179,5 +186,21 @@ public class S3Sample {
         }
         System.out.println();
     }
-
+    
+    private static void insertObjectInfoMySQL(Region s3Region, String bucketNameUS, String key) {
+    	java.sql.Connection con = null;
+    	String url = "jdbc:mysql://hoamai.cz7gigfg40xk.eu-central-1.rds.amazonaws.com:3306/hoamai"; //DB name is hoamai
+    	String user = "hoamai";
+    	String password = "123456789";
+    	
+    	try {
+    	     con = DriverManager.getConnection(url, user, password);
+    	     Statement st = (Statement) con.createStatement(); 
+    	     /* https://s3-us-west-2.amazonaws.com/lumenaki-s3-bucket-7ef0fef8-8019-487f-b687-c1d40f76b126/file_Object_Key */
+    	     st.executeUpdate("INSERT INTO tblImages(url) VALUES ('https://s3-" + s3Region.getName() + "." + s3Region.getDomain() + "/" + bucketNameUS + "/" + key + "')");
+    	     con.close();
+    	} catch (SQLException ex) {
+    		ex.printStackTrace();
+    	}
+    }
 }
